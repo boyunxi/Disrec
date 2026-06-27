@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>反推荐引擎 - 信息食谱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* ===== CSS Variables ===== */
+        :root {
+            --bg-body: #0b1120;
+            --bg-card: #1e293b;
+            --bg-card-hover: #263548;
+            --bg-surface: rgba(30, 41, 59, 0.5);
+            --bg-elevated: #0f172a;
+            --bg-input: #1e293b;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: #334155;
+            --border-hover: #475569;
+            --shadow-card: 0 0 60px rgba(139, 92, 246, 0.12);
+            --shadow-card-hover: 0 0 80px rgba(139, 92, 246, 0.2);
+            --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+            --particle-color-1: rgba(6, 182, 212, 0.5);
+            --particle-color-2: rgba(139, 92, 246, 0.5);
+            --particle-color-3: rgba(236, 72, 153, 0.4);
+            --radar-bg: rgba(15, 23, 42, 0.5);
+            --radar-grid: rgba(148, 163, 184, 0.15);
+            --radar-fill: rgba(6, 182, 212, 0.2);
+            --radar-stroke: rgba(6, 182, 212, 0.8);
+            --radar-dot: #06b6d4;
+            --radar-label: #94a3b8;
+            --modal-overlay: rgba(0, 0, 0, 0.6);
+            --progress-bg: rgba(51, 65, 85, 0.5);
+            --blind-spot-algo-bg: rgba(251, 146, 60, 0.08);
+            --blind-spot-algo-border: rgba(251, 146, 60, 0.3);
+            --blind-spot-algo-text: #fb923c;
+            --blind-spot-cog-bg: rgba(168, 85, 247, 0.08);
+            --blind-spot-cog-border: rgba(168, 85, 247, 0.3);
+            --blind-spot-cog-text: #a855f7;
+        }
+
+        [data-theme="light"] {
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f1f5f9;
+            --bg-surface: rgba(241, 245, 249, 0.8);
+            --bg-elevated: #f1f5f9;
+            --bg-input: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border-color: #e2e8f0;
+            --border-hover: #cbd5e1;
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.06);
+            --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.1);
+            --accent-gradient: linear-gradient(135deg, #0891b2 0%, #7c3aed 100%);
+            --particle-color-1: rgba(6, 182, 212, 0.25);
+            --particle-color-2: rgba(139, 92, 246, 0.25);
+            --particle-color-3: rgba(236, 72, 153, 0.2);
+            --radar-bg: rgba(241, 245, 249, 0.5);
+            --radar-grid: rgba(100, 116, 139, 0.15);
+            --radar-fill: rgba(6, 182, 212, 0.12);
+            --radar-stroke: rgba(6, 182, 212, 0.65);
+            --radar-dot: #0891b2;
+            --radar-label: #475569;
+            --modal-overlay: rgba(0, 0, 0, 0.4);
+            --progress-bg: rgba(226, 232, 240, 0.5);
+            --blind-spot-algo-bg: rgba(251, 146, 60, 0.06);
+            --blind-spot-algo-border: rgba(251, 146, 60, 0.25);
+            --blind-spot-algo-text: #c2410c;
+            --blind-spot-cog-bg: rgba(168, 85, 247, 0.06);
+            --blind-spot-cog-border: rgba(168, 85, 247, 0.25);
+            --blind-spot-cog-text: #6d28d9;
+        }
+
+        /* ===== Base ===== */
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-body);
+            color: var(--text-primary);
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        /* ===== Theme Utility Classes ===== */
+        .t-bg { background: var(--bg-body); }
+        .t-bg-card { background: var(--bg-card); transition: background-color 0.4s ease; }
+        .t-bg-surface { background: var(--bg-surface); }
+        .t-bg-elevated { background: var(--bg-elevated); transition: background-color 0.4s ease; }
+        .t-text { color: var(--text-primary); }
+        .t-text-2 { color: var(--text-secondary); }
+        .t-text-3 { color: var(--text-muted); }
+        .t-border { border-color: var(--border-color); transition: border-color 0.4s ease; }
+        .t-border-hover:hover { border-color: var(--border-hover); }
+        .t-shadow { box-shadow: var(--shadow-card); }
+
+        /* ===== Gradient Text ===== */
+        .gradient-text {
+            background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 50%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ===== Card Styles ===== */
+        .card-glow {
+            box-shadow: var(--shadow-card);
+            transition: box-shadow 0.4s ease, border-color 0.4s ease;
+        }
+        .card-glow:hover {
+            box-shadow: var(--shadow-card-hover);
+        }
+        .card-hover-glow {
+            position: relative;
+            overflow: hidden;
+        }
+        .card-hover-glow::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .card-hover-glow:hover::before {
+            opacity: 1;
+        }
+
+        /* ===== Expand Content ===== */
+        .expand-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease, opacity 0.3s ease;
+            opacity: 0;
+        }
+        .expand-content.open {
+            max-height: 1200px;
+            opacity: 1;
+        }
+
+        /* ===== Buttons ===== */
+        .btn-primary {
+            background: var(--accent-gradient);
+            transition: all 0.2s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.35);
+        }
+
+        /* ===== Dimension Bars ===== */
+        .dimension-bar {
+            height: 6px;
+            border-radius: 3px;
+            background: var(--progress-bg);
+            overflow: hidden;
+        }
+        .dimension-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* ===== Spectrum Dot ===== */
+        .spectrum-dot {
+            transition: all 0.3s ease;
+        }
+
+        /* ===== Tags ===== */
+        .tag-pill {
+            transition: all 0.2s ease;
+        }
+        .tag-pill:hover {
+            transform: translateY(-1px);
+        }
+
+        /* ===== Keyframes ===== */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(40px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes elasticPop {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            50% { transform: translate(-50%, -50%) scale(1.25); }
+            70% { transform: translate(-50%, -50%) scale(0.9); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        @keyframes progressGrow {
+            from { width: 0%; }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.15); }
+            50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.3); }
+        }
+        @keyframes themeSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes cardSlideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ===== Animation Utility Classes ===== */
+        .anim-fade-in-up {
+            opacity: 0;
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        .anim-slide-in {
+            opacity: 0;
+            animation: slideInUp 0.5s ease forwards;
+        }
+        .anim-card-slide {
+            opacity: 0;
+            animation: cardSlideIn 0.4s ease forwards;
+        }
+        .anim-elastic {
+            animation: elasticPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* ===== Progress Bar ===== */
+        .progress-track {
+            background: var(--progress-bg);
+            transition: background-color 0.4s ease;
+        }
+        .progress-fill {
+            background: var(--accent-gradient);
+            transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .progress-complete .progress-fill {
+            background: linear-gradient(90deg, #06b6d4, #8b5cf6, #ec4899, #8b5cf6, #06b6d4);
+            background-size: 200% 100%;
+            animation: shimmer 2s linear infinite;
+        }
+
+        /* ===== Particle Canvas ===== */
+        #particle-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .hero-content { position: relative; z-index: 2; }
+
+        /* ===== Radar Section ===== */
+        .radar-section {
+            background: var(--bg-card);
+            transition: background-color 0.4s ease, border-color 0.4s ease;
+        }
+        #radar-canvas {
+            width: 100%;
+            max-width: 320px;
+            aspect-ratio: 1;
+        }
+
+        /* ===== Blind Spot Boxes ===== */
+        .blind-spot-algo {
+            background: var(--blind-spot-algo-bg);
+            border-left: 3px solid var(--blind-spot-algo-border);
+            transition: background-color 0.4s ease, border-color 0.4s ease;
+        }
+        .blind-spot-cog {
+            background: var(--blind-spot-cog-bg);
+            border-left: 3px solid var(--blind-spot-cog-border);
+            transition: background-color 0.4s ease, border-color 0.4s ease;
+        }
+        .blind-spot-algo .blind-label { color: var(--blind-spot-algo-text); }
+        .blind-spot-cog .blind-label { color: var(--blind-spot-cog-text); }
+
+        /* ===== Share Button ===== */
+        .share-btn {
+            transition: all 0.2s ease;
+        }
+        .share-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* ===== Share Modal ===== */
+        .share-card-preview {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            transition: background-color 0.4s ease, border-color 0.4s ease;
+        }
+
+        /* ===== Theme Toggle ===== */
+        .theme-toggle {
+            transition: transform 0.5s ease;
+        }
+        .theme-toggle:hover {
+            transform: rotate(30deg);
+        }
+
+        /* ===== Modal ===== */
+        .modal-overlay {
+            background: var(--modal-overlay);
+            transition: background-color 0.4s ease;
+        }
+
+        /* ===== Scrollbar ===== */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-body); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 640px) {
+            .hero-grid { grid-template-columns: 1fr !important; }
+            #radar-canvas { max-width: 260px; }
+            .blind-spot-grid { grid-template-columns: 1fr !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="border-b t-border bg-slate-900/80 backdrop-blur-md sticky top-0 z-50" style="border-color: var(--border-color); background: var(--bg-elevated);">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-violet-600 flex items-center justify-center text-white font-bold text-lg">
+                    反
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold gradient-text">反推荐引擎</h1>
+                    <p class="text-xs" style="color: var(--text-muted);">信息食谱 · Information Diet</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-sm" style="color: var(--text-muted);">
+                <span id="current-date"></span>
+                <button onclick="toggleTheme()" class="theme-toggle p-2 rounded-lg hover:bg-white/10 transition-colors" title="切换主题" id="theme-btn">
+                    <svg id="theme-icon-dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                    <svg id="theme-icon-light" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                </button>
+                <button onclick="openSettings()" class="hover:text-white transition-colors" title="设置兴趣标签" style="color: var(--text-secondary);">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Daily Progress Bar -->
+    <div id="daily-progress" class="max-w-6xl mx-auto px-4 py-3 anim-fade-in-up" style="animation-delay: 0.1s;">
+        <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-medium" style="color: var(--text-secondary);">
+                <span id="progress-label">今日信息食谱</span>
+                <span id="progress-status" class="ml-1" style="color: var(--accent-gradient == 'linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%)' ? '#06b6d4' : '#06b6d4');">0/3 已阅读</span>
+            </span>
+            <span id="progress-complete-badge" class="text-xs font-medium text-emerald-400 hidden">已完成今日食谱!</span>
+        </div>
+        <div class="progress-track h-2 rounded-full overflow-hidden">
+            <div class="progress-fill h-full rounded-full" id="progress-fill" style="width: 0%;"></div>
+        </div>
+    </div>
+
+    <main class="max-w-6xl mx-auto px-4 py-4">
+        <!-- Hero Section -->
+        <section class="mb-10 anim-fade-in-up" style="animation-delay: 0.2s;">
+            <div class="rounded-2xl p-6 md:p-8 card-glow border relative overflow-hidden" style="background: var(--bg-card); border-color: var(--border-color);">
+                <canvas id="particle-canvas"></canvas>
+                <div class="hero-content">
+                    <div class="grid lg:grid-cols-2 gap-8 items-center hero-grid">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs mb-4">
+                                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                                不是推你喜欢的，也不是推你讨厌的
+                            </div>
+                            <h2 class="text-2xl md:text-3xl font-bold mb-3" style="color: var(--text-primary); line-height: 1.3;">
+                                像搭配营养一样，搭配你的信息食谱
+                            </h2>
+                            <p class="mb-6 leading-relaxed" style="color: var(--text-secondary); font-size: 0.9375rem; line-height: 1.75;">
+                                公正的推荐不是「用户缺什么补什么」，而是在<strong>立场、证据、情绪、时间、地理、来源</strong>多个维度上保持平衡，让你看到议题的真实全貌。
+                            </p>
+                            <div class="flex flex-wrap gap-3">
+                                <button onclick="refreshAll()" class="btn-primary px-6 py-2.5 rounded-full text-white font-medium text-sm">
+                                    生成今日食谱
+                                </button>
+                                <button onclick="scrollToAbout()" class="px-6 py-2.5 rounded-full border text-sm transition-colors" style="border-color: var(--border-color); color: var(--text-secondary);" onmouseover="this.style.background='var(--bg-surface)'" onmouseout="this.style.background='transparent'">
+                                    了解公正算法
+                                </button>
+                            </div>
+                        </div>
+                        <div class="rounded-xl p-6 border" style="background: var(--bg-elevated); border-color: var(--border-color);">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm" style="color: var(--text-secondary);">今日信息食谱均衡度</span>
+                                <span class="text-2xl font-bold text-cyan-400" id="balance-score">--</span>
+                            </div>
+                            <div class="space-y-3 mb-5">
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1" style="color: var(--text-muted);">
+                                        <span>立场多样性</span>
+                                        <span id="score-stance">--</span>
+                                    </div>
+                                    <div class="dimension-bar"><div class="dimension-fill bg-gradient-to-r from-cyan-500 to-blue-500" id="bar-stance" style="width: 0%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1" style="color: var(--text-muted);">
+                                        <span>证据质量</span>
+                                        <span id="score-evidence">--</span>
+                                    </div>
+                                    <div class="dimension-bar"><div class="dimension-fill bg-gradient-to-r from-violet-500 to-purple-500" id="bar-evidence" style="width: 0%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1" style="color: var(--text-muted);">
+                                        <span>领域跨度</span>
+                                        <span id="score-domain">--</span>
+                                    </div>
+                                    <div class="dimension-bar"><div class="dimension-fill bg-gradient-to-r from-pink-500 to-rose-500" id="bar-domain" style="width: 0%"></div></div>
+                                </div>
+                            </div>
+                            <div class="text-sm mb-3" style="color: var(--text-secondary);">你的信息食谱偏好基线：</div>
+                            <div class="flex flex-wrap gap-2" id="user-tags"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Transparency & Spectrum -->
+        <section class="grid md:grid-cols-2 gap-6 mb-8 anim-fade-in-up" style="animation-delay: 0.35s;">
+            <div class="rounded-xl p-5 border" style="background: var(--bg-card); border-color: var(--border-color); transition: background-color 0.4s ease, border-color 0.4s ease;">
+                <h3 class="font-bold mb-4 flex items-center gap-2" style="color: var(--text-primary);">
+                    <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    推荐透明度
+                </h3>
+                <div class="space-y-3 text-sm" id="transparency-panel"></div>
+            </div>
+            <div class="rounded-xl p-5 border" style="background: var(--bg-card); border-color: var(--border-color); transition: background-color 0.4s ease, border-color 0.4s ease;">
+                <h3 class="font-bold mb-4 flex items-center gap-2" style="color: var(--text-primary);">
+                    <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    观点光谱
+                </h3>
+                <div class="relative h-24 rounded-lg overflow-hidden" style="background: var(--bg-elevated);" id="spectrum-chart">
+                    <div class="absolute inset-x-0 top-1/2 h-px" style="background: var(--border-color);"></div>
+                    <div class="absolute left-2 top-1/2 -translate-y-1/2 text-xs" style="color: var(--text-muted);">保守</div>
+                    <div class="absolute right-2 top-1/2 -translate-y-1/2 text-xs" style="color: var(--text-muted);">激进</div>
+                    <div class="absolute left-1/2 top-2 -translate-x-1/2 text-xs" style="color: var(--text-muted);">温和</div>
+                </div>
+                <p class="text-xs mt-2" style="color: var(--text-muted);">每个点代表一条今日推荐内容在核心议题上的立场位置</p>
+            </div>
+        </section>
+
+        <!-- Cognitive Blind Spot Radar -->
+        <section class="mb-8 anim-fade-in-up" style="animation-delay: 0.45s;">
+            <div class="rounded-xl p-5 md:p-6 border radar-section" style="background: var(--bg-card); border-color: var(--border-color);">
+                <h3 class="font-bold mb-4 flex items-center gap-2" style="color: var(--text-primary);">
+                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                    认知盲区雷达
+                </h3>
+                <div class="grid md:grid-cols-2 gap-6 items-center">
+                    <div class="flex justify-center">
+                        <canvas id="radar-canvas" width="320" height="320"></canvas>
+                    </div>
+                    <div>
+                        <p class="text-sm mb-4" style="color: var(--text-secondary); line-height: 1.7;">
+                            基于你选择的兴趣基线标签和今日推荐内容，分析你可能存在的认知盲区。六个维度越均衡，你的信息食谱越健康。
+                        </p>
+                        <div class="space-y-2 mb-4" id="radar-dimensions-list"></div>
+                        <div class="rounded-lg p-3 border" style="background: var(--blind-spot-algo-bg); border-color: var(--blind-spot-algo-border);">
+                            <div class="text-xs font-medium mb-1" style="color: var(--blind-spot-algo-text);">最薄弱维度</div>
+                            <p class="text-sm" style="color: var(--text-secondary);" id="radar-weakest-tip">--</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recommendations -->
+        <section class="mb-10 anim-fade-in-up" style="animation-delay: 0.55s;">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <div>
+                    <h3 class="text-xl font-bold" style="color: var(--text-primary);">今日信息食谱</h3>
+                    <p class="text-sm" style="color: var(--text-muted);" id="recipe-subtitle">3 条经过多维度平衡筛选的内容</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="filterCards('all')" class="px-3 py-1 rounded-full text-xs transition-colors" data-filter="all" style="background: var(--bg-card); color: var(--text-primary);">全部</button>
+                    <button onclick="filterCards('algorithm')" class="px-3 py-1 rounded-full text-xs transition-colors" data-filter="algorithm" style="background: var(--bg-elevated); color: var(--text-muted);">算法平衡</button>
+                    <button onclick="filterCards('editor')" class="px-3 py-1 rounded-full text-xs transition-colors" data-filter="editor" style="background: var(--bg-elevated); color: var(--text-muted);">编辑精选</button>
+                    <button onclick="filterCards('random')" class="px-3 py-1 rounded-full text-xs transition-colors" data-filter="random" style="background: var(--bg-elevated); color: var(--text-muted);">随机发现</button>
+                </div>
+            </div>
+            <div id="cards-container" class="space-y-4"></div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="mb-10 anim-fade-in-up" style="animation-delay: 0.65s;">
+            <div class="rounded-2xl p-6 md:p-8 border" style="background: var(--bg-card); border-color: var(--border-color); transition: background-color 0.4s ease, border-color 0.4s ease;">
+                <h3 class="text-xl font-bold mb-4" style="color: var(--text-primary);">什么是「公正的反推荐」？</h3>
+                <div class="grid md:grid-cols-2 gap-6 text-sm leading-relaxed" style="color: var(--text-secondary);">
+                    <div>
+                        <h4 class="font-medium mb-2" style="color: var(--text-primary);">我们不做的</h4>
+                        <ul class="space-y-2 list-disc list-inside">
+                            <li>不是「你喜欢什么就推什么」</li>
+                            <li>不是「你讨厌什么就反着推」</li>
+                            <li>不是用对立观点激怒你换流量</li>
+                            <li>不是假装客观实则夹带立场</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-medium mb-2" style="color: var(--text-primary);">我们做的</h4>
+                        <ul class="space-y-2 list-disc list-inside">
+                            <li>在立场、证据、情绪、时间、地理、来源六个维度上追求平衡</li>
+                            <li>每条推荐都标注证据等级和来源类型</li>
+                            <li>主动混入随机性和编辑精选，防止算法自我强化</li>
+                            <li>公开推荐组成比例，让用户知道算法怎么想的</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t py-8 text-center text-sm" style="border-color: var(--border-color); color: var(--text-muted);">
+        <p>反推荐引擎 Demo · TRAE AI 创造力大赛参赛作品</p>
+    </footer>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 backdrop-blur-sm z-50 hidden items-center justify-center modal-overlay">
+        <div class="rounded-2xl p-6 max-w-md w-full mx-4 border" style="background: var(--bg-card); border-color: var(--border-color);">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold" style="color: var(--text-primary);">设置你的兴趣基线</h3>
+                <button onclick="closeSettings()" style="color: var(--text-muted);">✕</button>
+            </div>
+            <p class="text-sm mb-4" style="color: var(--text-secondary);">选择你平时关注的话题，算法会以此为参考寻找多元视角，而不是把你困在这些话题里。</p>
+            <div class="flex flex-wrap gap-2 mb-6" id="settings-tags"></div>
+            <button onclick="saveSettings()" class="w-full btn-primary py-2.5 rounded-xl text-white font-medium">保存设置</button>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="share-modal" class="fixed inset-0 backdrop-blur-sm z-50 hidden items-center justify-center modal-overlay">
+        <div class="rounded-2xl p-6 max-w-md w-full mx-4 border" style="background: var(--bg-card); border-color: var(--border-color);">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold" style="color: var(--text-primary);">分享这条推荐</h3>
+                <button onclick="closeShareModal()" style="color: var(--text-muted);">✕</button>
+            </div>
+            <div id="share-card-preview" class="share-card-preview rounded-xl p-5 mb-4"></div>
+            <div class="flex gap-3">
+                <button onclick="copyShareLink()" class="flex-1 btn-primary py-2.5 rounded-xl text-white font-medium text-sm flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    <span id="copy-link-text">复制链接</span>
+                </button>
+                <button onclick="generateShareImage()" class="flex-1 py-2.5 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-colors" style="border-color: var(--border-color); color: var(--text-secondary);" onmouseover="this.style.background='var(--bg-surface)'" onmouseout="this.style.background='transparent'">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    生成分享卡片
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== 常量与配置 =====
+        const STORAGE_PREFIX = 'disrec_';
+        const RADAR_DIMENSIONS = [
+            { key: 'stanceBreadth', label: '立场广度', icon: '⚖️' },
+            { key: 'evidenceAwareness', label: '证据意识', icon: '🔬' },
+            { key: 'emotionalResilience', label: '情绪韧性', icon: '💪' },
+            { key: 'temporalDepth', label: '时间纵深', icon: '⏳' },
+            { key: 'geographicVision', label: '地理视野', icon: '🌍' },
+            { key: 'sourceDiversity', label: '来源多样性', icon: '📚' }
+        ];
+
+        const IMPROVEMENT_TIPS = {
+            stanceBreadth: '尝试关注与你立场不同的观点，了解反对者的逻辑——理解不等于认同。',
+            evidenceAwareness: '留意信息的来源和证据强度，练习区分「观点」与「事实」。',
+            emotionalResilience: '注意情绪对判断的影响，试着理解那些引发你不适的信息背后的逻辑。',
+            temporalDepth: '关注事件的长期背景和历史脉络，不只看即时新闻和热点。',
+            geographicVision: '多了解不同地区和国家对同一议题的看法，打破本地视角的局限。',
+            sourceDiversity: '拓展信息来源类型，不只依赖主流媒体或单一平台的内容。'
+        };
+
+        // ===== 内容库 =====
+        const allItems = [
+            {
+                id: 1,
+                title: "为什么\"极简生活\"正在变成一种新型消费主义？",
+                source: "《人物》杂志",
+                topic: "生活方式",
+                selectionType: "algorithm",
+                summary: "当\"极简\"本身成为一种需要购买的审美和生活方式品牌，它是否背离了减少欲望的初衷？",
+                content: "极简生活的本意是减少欲望、降低焦虑，但当它成为一种生活方式品牌、一种社交媒体滤镜、一种需要持续投入才能维持的状态时，它就和消费主义合谋了。我们购买的不是物品，而是\"我过上了正确生活\"的幻觉。真正的极简，或许不是买对东西，而是不再被\"应该如何生活\"的叙事绑架。",
+                dimensions: { stance: 0, evidence: 3, emotion: 0, timeScale: "中期", geography: "全球", sourceType: "独立媒体" },
+                tags: ["消费主义", "生活方式", "批判思维"],
+                algorithmBlindSpot: "极简生活内容在算法眼中是高互动率话题——Instagram和生活方式平台大量推送'极简好物'，算法倾向于推荐'买什么'而非'为什么不买'",
+                cognitiveBlindSpot: "你可能默认认为'减少消费'等于'正确生活'，但忽略了'极简'本身也可能成为一种需要购买的认同标签"
+            },
+            {
+                id: 2,
+                title: "有机农业养活不了城市：一个日本农民的 30 年实验",
+                source: "NHK 纪录片",
+                topic: "农业与食物",
+                selectionType: "editor",
+                summary: "\"苹果之神\"木村秋则证明：无农药苹果可以种出来，但无法规模化供养现代城市。",
+                content: "木村秋则在日本青森县坚持无农药苹果种植，被称为\"苹果之神\"。但他的成功无法复制：极低产量、极高失败率、对消费者教育的高度依赖。如果所有农民都这样做，城市人口将面临严重的食物短缺。这不是反对有机，而是提醒我们：任何解决方案都有边界，环保理想必须和现实规模对话。",
+                dimensions: { stance: -1, evidence: 4, emotion: -1, timeScale: "长期", geography: "区域", sourceType: "主流媒体" },
+                tags: ["农业", "环保", "系统思维"],
+                algorithmBlindSpot: "有机/环保话题在算法推荐中被高度正面包装，批评性视角几乎不会出现在'可持续生活'的推荐流中",
+                cognitiveBlindSpot: "你可能默认认为'有机=好的、化学=坏的'，但忽略了规模化农业与有机农业之间不是非此即彼，而是需要系统性权衡"
+            },
+            {
+                id: 3,
+                title: "95 后重返工厂：不是别无选择，而是主动逃离写字楼",
+                source: "《中国青年报》",
+                topic: "劳动与职业",
+                selectionType: "algorithm",
+                summary: "当所有人都在讨论\"大厂\"和\"自由职业\"时，有一部分年轻人选择了第三条路。",
+                content: "这些年轻人不是\"混不下去才进厂\"，而是厌倦了PPT、会议、OKR和虚无的\"赋能\"。他们发现，掌握一门具体技能、看到实实在在的产品从自己手里诞生，反而能带来更强的确定感和成就感。这提醒我们：工作的意义感不一定来自\"知识密集型\"，也可能来自\"手艺可触摸\"。",
+                dimensions: { stance: 1, evidence: 3, emotion: 1, timeScale: "中期", geography: "区域", sourceType: "主流媒体" },
+                tags: ["劳动", "职业选择", "制造业"],
+                algorithmBlindSpot: "蓝领叙事在社交媒体算法中几乎隐形——工厂内容不会出现在白领用户的信息流，因为算法判定你'不感兴趣'",
+                cognitiveBlindSpot: "你可能默认认为'进厂=失败'，但忽略了体力劳动中确实存在写字楼里找不到的确定感和成就感"
+            },
+            {
+                id: 4,
+                title: "AI 越发达，为什么人类反而越需要学习哲学？",
+                source: "《纽约客》",
+                topic: "科技伦理",
+                selectionType: "editor",
+                summary: "当 AI 能回答所有\"怎么做\"的问题时，人类唯一不可替代的能力是追问\"为什么\"和\"应不应该\"。",
+                content: "AI 擅长优化目标，却不擅长质疑目标本身。它能告诉你如何最有效率地达成KPI，但不会问你这个KPI是否正义。哲学不会帮你写代码，但它能帮你决定：哪些代码不应该被写出来。在AI时代，批判性思维和伦理判断不再是文科生的奢侈品，而是所有人的生存技能。",
+                dimensions: { stance: 0, evidence: 3, emotion: 0, timeScale: "长期", geography: "全球", sourceType: "独立媒体" },
+                tags: ["哲学", "AI 伦理", "人文"],
+                algorithmBlindSpot: "哲学类内容在技术平台算法中被归类为'低转化'，读者更倾向点击'AI工具推荐'而非'伦理反思'",
+                cognitiveBlindSpot: "你可能默认认为技术问题只需要技术方案，但忽略了所有技术决策最终都是价值判断"
+            },
+            {
+                id: 5,
+                title: "中国县城里的老年直播：他们不是韭菜，也在寻找存在感",
+                source: "《单读》",
+                topic: "老龄化",
+                selectionType: "random",
+                summary: "当我们嘲笑老年人被直播带货骗钱时，很少有人看见他们孤独的日常生活和强烈的连接渴望。",
+                content: "在县城和农村，很多老人把手机直播当作\"电视+邻里串门\"的替代品。他们打赏的不只是商品，而是一种被看见、被回应的感觉。理解这一点，比简单地批判\"上当受骗\"更重要。它提醒我们：技术产品的用户不一定是年轻人，数字鸿沟的另一端有真实而复杂的人性。",
+                dimensions: { stance: 0, evidence: 3, emotion: -1, timeScale: "中期", geography: "本地", sourceType: "独立媒体" },
+                tags: ["老龄化", "县域经济", "数字鸿沟"],
+                algorithmBlindSpot: "老年人+县城的组合在算法中几乎不会被推给年轻城市用户——人口画像不匹配，互动预期低",
+                cognitiveBlindSpot: "你可能默认认为老年人是'被动受害者'，但忽略了他们也在主动使用技术满足真实的社交需求"
+            },
+            {
+                id: 6,
+                title: "效率成瘾：为什么我们越管理时间，越觉得时间不够用？",
+                source: "《哈佛商业评论》",
+                topic: "效率与心理",
+                selectionType: "algorithm",
+                summary: "番茄钟、GTD、时间块……这些工具本意为解放时间，却可能让我们变成时间的奴隶。",
+                content: "当每一分钟都被计划、记录、优化时，我们失去了\"无所事事\"的能力。而创造力、灵感、真正的人际关系，往往正诞生于那些不被计算的时间里。效率工具本身没有错，但把人生当作一个永远需要优化的系统，可能是另一种形式的存在焦虑。",
+                dimensions: { stance: -1, evidence: 4, emotion: -1, timeScale: "中期", geography: "全球", sourceType: "学术研究" },
+                tags: ["效率", "时间管理", "心理健康"],
+                algorithmBlindSpot: "效率工具和时间管理内容在算法中是高点击率品类，批评效率文化本身会与平台利益冲突——毕竟你用的就是效率工具",
+                cognitiveBlindSpot: "你可能默认认为'更高效=更好'，但忽略了过度优化本身可能是一种逃避——逃避面对'我到底想做什么'的问题"
+            },
+            {
+                id: 7,
+                title: "游戏不是逃避现实，而是当代年轻人的\"社会实验室\"",
+                source: "《澎湃思想市场》",
+                topic: "青年文化",
+                selectionType: "random",
+                summary: "主流叙事把游戏视为洪水猛兽，但年轻人在游戏里学习协作、经济和身份认同。",
+                content: "从《我的世界》到《原神》，游戏提供了一个低成本的试错空间。年轻人在里面练习领导力、谈判、资源管理，甚至进行小规模的政治实验。忽视游戏，就是忽视一个巨大的社会现象。理解游戏，可能是理解下一代思维方式的关键入口。",
+                dimensions: { stance: 1, evidence: 3, emotion: 1, timeScale: "中期", geography: "全球", sourceType: "独立媒体" },
+                tags: ["游戏", "青年文化", "社会学"],
+                algorithmBlindSpot: "游戏正面的社会学分析几乎不会出现在非游戏用户的信息流中——算法将其归类为'游戏圈内容'，不会跨界推送",
+                cognitiveBlindSpot: "你可能默认认为游戏是'浪费时间'，但忽略了游戏作为社会模拟和身份实验的独特功能"
+            },
+            {
+                id: 8,
+                title: "沉默的大多数：为什么网上声量最大的观点，往往不是多数人的？",
+                source: "皮尤研究中心",
+                topic: "舆论与社会",
+                selectionType: "editor",
+                summary: "算法放大了极端声音，让温和的大多数人在舆论场上隐形。",
+                content: "研究表明，在大多数争议话题上，持有温和立场的人往往占多数，但他们不太愿意发声。结果是，互联网平台被两端的声音主导，中间地带逐渐消失。识别这一点，能帮你避免被算法煽动情绪，也能让你对\"主流民意\"保持健康的怀疑。",
+                dimensions: { stance: 0, evidence: 5, emotion: -1, timeScale: "短期", geography: "全球", sourceType: "机构报告" },
+                tags: ["舆论", "数据素养", "社会心理"],
+                algorithmBlindSpot: "温和声音本身不是优质内容——算法偏好极端观点因为它们能引发更多互动、评论和转发",
+                cognitiveBlindSpot: "你可能默认认为'网上声量大=主流观点'，但忽略了互联网的发声机制天然偏向极端"
+            },
+            {
+                id: 9,
+                title: "手艺人复兴：年轻人为什么放弃高薪去做木匠、皮匠、裁缝？",
+                source: "《三联生活周刊》",
+                topic: "劳动与职业",
+                selectionType: "random",
+                summary: "在数字化浪潮中，一些年轻人开始用双手和实体材料重建与世界的连接。",
+                content: "做木工、皮革、陶艺时，你必须接受材料的限制、等待干燥、承受失败。这种\"慢\"和\"不确定\"，恰好是对数字世界即时反馈文化的一种矫正。手工艺不只是怀旧，它提供了一种与物质世界和解的方式。",
+                dimensions: { stance: 1, evidence: 3, emotion: 1, timeScale: "长期", geography: "区域", sourceType: "主流媒体" },
+                tags: ["手工艺", "实体经济", "生活方式"],
+                algorithmBlindSpot: "手工艺内容在算法中被归类为'小众审美'，不会出现在职业发展或经济分析的信息流中",
+                cognitiveBlindSpot: "你可能默认认为'高薪=好工作'，但忽略了物质回报和工作意义感之间的关系并非线性"
+            },
+            {
+                id: 10,
+                title: "核能复兴：被妖魔化 40 年后，为什么科学家重新看好它？",
+                source: "《MIT 科技评论》",
+                topic: "能源与环境",
+                selectionType: "algorithm",
+                summary: "在可再生能源不足以快速替代化石燃料的现实下，核能正被重新审视。",
+                content: "福岛事故后，核能在公众心中几乎成了\"危险\"的代名词。但气候变化的紧迫性让许多气候科学家改变了立场：风能和太阳能增长很快，但储能问题仍未解决；核能能量密度高、碳排放极低。这不是说核能完美，而是提醒我们：能源转型没有灵丹妙药，每个选择都有代价。",
+                dimensions: { stance: 1, evidence: 5, emotion: 0, timeScale: "长期", geography: "全球", sourceType: "学术研究" },
+                tags: ["能源", "气候变化", "科技政策"],
+                algorithmBlindSpot: "核能正面报道在算法中很难获得推荐——恐惧情绪的传播效率远高于理性分析，福岛的记忆仍在影响算法权重",
+                cognitiveBlindSpot: "你可能默认认为'核能=危险'，但忽略了在气候变化背景下，拒绝核能本身也有巨大的碳排代价"
+            },
+            {
+                id: 11,
+                title: "城市里的\"第三空间\"正在消失：咖啡馆为什么越来越像办公室？",
+                source: "《城市中国》",
+                topic: "城市与空间",
+                selectionType: "random",
+                summary: "当咖啡馆都装上插头和 Wi-Fi，它们还是让人们放松的公共空间吗？",
+                content: "社会学家雷·奥登伯格提出的\"第三空间\"——家和工作之外的社交场所——正在城市租金上涨和效率文化中被挤压。咖啡馆、社区中心、公园曾经是陌生人相遇的地方，现在要么变成办公场所，要么被消费门槛筛选。这影响的不只是休闲，还有城市的公共生活和偶然的连接。",
+                dimensions: { stance: -1, evidence: 3, emotion: -1, timeScale: "中期", geography: "本地", sourceType: "独立媒体" },
+                tags: ["城市规划", "公共空间", "社会资本"],
+                algorithmBlindSpot: "城市空间话题在算法中被归类为'城市规划专业内容'，普通市民的信息流中几乎不会出现",
+                cognitiveBlindSpot: "你可能默认认为'咖啡馆只是喝咖啡的地方'，但忽略了公共空间作为社会连接器的重要功能"
+            },
+            {
+                id: 12,
+                title: "免费阅读时代结束了：为什么高质量的 journalism 必须付费？",
+                source: "《哥伦比亚新闻评论》",
+                topic: "媒体与信息",
+                selectionType: "editor",
+                summary: "广告模式让媒体追逐点击，付费模式让读者成为真正的用户。",
+                content: "当信息免费时，真正的成本被转嫁给了注意力经济。算法推荐、标题党、情绪煽动成了生存策略。付费新闻不是精英主义，而是让新闻机构有资源做调查、核实、深度报道。信息素养的一部分，是愿意为可靠的信息源付费。",
+                dimensions: { stance: 1, evidence: 4, emotion: 0, timeScale: "长期", geography: "全球", sourceType: "学术研究" },
+                tags: ["新闻业", "信息素养", "商业模式"],
+                algorithmBlindSpot: "付费墙内容在社交媒体算法中天然劣势——不能被自由分享=不能被算法传播，形成负面循环",
+                cognitiveBlindSpot: "你可能默认认为'信息应该免费'，但忽略了免费信息的真正成本是你被当作注意力产品出售"
+            },
+            {
+                id: 13,
+                title: "deaf 社区为什么不欢迎人工耳蜗？一个关于身份认同的争论",
+                source: "《大西洋月刊》",
+                topic: "残障与文化",
+                selectionType: "algorithm",
+                summary: "对听人来说，人工耳蜗是\"治愈\"；对部分聋人来说，它是对一种文化和语言的威胁。",
+                content: "聋人社群里有一部分人把手语视为语言、把 deaf 视为身份而非疾病。他们担心人工耳蜗的普及会让手语消失、让聋人文化被同化。这不是反对医学进步，而是关于谁来定义\"正常\"，以及少数群体的文化权利是否应该被保护。",
+                dimensions: { stance: -1, evidence: 4, emotion: -1, timeScale: "长期", geography: "全球", sourceType: "独立媒体" },
+                tags: ["残障权利", "文化认同", "医学伦理"],
+                algorithmBlindSpot: "残障文化视角在算法中几乎隐形——听人用户不会收到聋人社区的内容，算法基于听力人群的默认假设",
+                cognitiveBlindSpot: "你可能默认认为'治愈残障=好事'，但忽略了某些残障社区视自身为文化群体而非需要修复的个体"
+            },
+            {
+                id: 14,
+                title: "经济越发达，为什么年轻人越不想生孩子？",
+                source: "《经济学人》",
+                topic: "人口与经济",
+                selectionType: "algorithm",
+                summary: "低生育率不是个人选择那么简单，它反映的是住房、教育、性别分工等系统性问题。",
+                content: "把低生育率归咎于年轻人\"自私\"或\"懒惰\"是过于简单的。在高收入国家，养育成本飙升、职场对母亲不友好、住房昂贵、托儿所稀缺。这些因素叠加，让\"不生孩子\"成为一个理性的经济选择。理解这一点，才能设计真正有效的生育支持政策。",
+                dimensions: { stance: 0, evidence: 5, emotion: -1, timeScale: "长期", geography: "全球", sourceType: "机构报告" },
+                tags: ["人口", "经济学", "公共政策"],
+                algorithmBlindSpot: "生育话题在算法中往往被简化为'个人选择'叙事，系统性分析因为不够情绪化而难以获得推荐",
+                cognitiveBlindSpot: "你可能默认认为'不生是个人自由'，但忽略了个体选择的集合正在产生难以逆转的社会后果"
+            },
+            {
+                id: 15,
+                title: "远程办公三年后，为什么越来越多公司要求回办公室？",
+                source: "《华尔街日报》",
+                topic: "劳动与职业",
+                selectionType: "random",
+                summary: "远程办公的争议不只是效率，还涉及企业文化、创新碰撞和员工权力。",
+                content: "疫情期间被迫接受的远程办公，正在变成一场关于工作本质的拉锯战。公司担心创新减少、文化稀释、管理失控；员工则珍惜省下的通勤时间和生活自主权。真相可能是：不是所有工作都适合远程，也不是所有员工都需要坐班。一刀切的政策往往忽略这种复杂性。",
+                dimensions: { stance: 0, evidence: 4, emotion: 0, timeScale: "短期", geography: "全球", sourceType: "主流媒体" },
+                tags: ["远程办公", "企业管理", "工作方式"],
+                algorithmBlindSpot: "远程vs坐班的讨论在算法中往往走向极端——要么'远程是未来'要么'回办公室天经地义'，混合视角缺乏戏剧性",
+                cognitiveBlindSpot: "你可能默认站在'远程'或'坐班'的一边，但忽略了不同工作性质和人生阶段可能需要不同的工作方式"
+            },
+            {
+                id: 16,
+                title: "算法推荐把音乐产业变成了\"怀旧工业\"",
+                source: "《卫报》",
+                topic: "文化与技术",
+                selectionType: "editor",
+                summary: "流媒体算法倾向于推荐你已经喜欢的风格，新音乐反而越来越难被发现。",
+                content: "在算法主导的音乐推荐时代，平台为了最大化播放时长，会反复推送用户已经验证过喜欢的风格。结果是老歌、热门歌、相似风格的歌占据主导，实验性音乐和新兴艺术家被边缘化。音乐产业正在从\"发现新声音\"变成\"安全地重复过去\"。",
+                dimensions: { stance: -1, evidence: 3, emotion: -1, timeScale: "中期", geography: "全球", sourceType: "主流媒体" },
+                tags: ["音乐", "算法", "文化产业"],
+                algorithmBlindSpot: "音乐流媒体算法天然倾向推荐你已喜欢的风格——探索新音乐不会出现在首页，因为算法优化的目标是播放时长而非发现感",
+                cognitiveBlindSpot: "你可能默认认为自己的音乐品味是自主发展的，但忽略了你的'发现'可能只是算法在相似度圆圈内的微小偏移"
+            },
+            {
+                id: 17,
+                title: "为什么有些国家越扶贫，穷人越依赖救助？",
+                source: "《发展经济学刊》",
+                topic: "经济与政策",
+                selectionType: "algorithm",
+                summary: "福利依赖不是道德问题，而是政策设计问题：救助如果附带惩罚性条件，反而可能固化贫困。",
+                content: "传统观点认为穷人\"懒\"或\"不会规划\"，但行为经济学研究发现：长期贫困会严重消耗人的认知资源，让人难以做长远决策。无条件现金转移、简化申请流程、减少羞辱性审核，有时比复杂条件式救助更有效。扶贫的关键不是判断谁\"值得\"帮助，而是理解贫困如何改变人的决策能力。",
+                dimensions: { stance: 1, evidence: 5, emotion: 0, timeScale: "长期", geography: "全球", sourceType: "学术研究" },
+                tags: ["扶贫", "行为经济学", "公共政策"],
+                algorithmBlindSpot: "批评福利制度的叙事在算法中传播更快——'懒惰的穷人'比'贫困消耗认知资源'更容易引发情绪互动",
+                cognitiveBlindSpot: "你可能默认认为'扶贫应该有条件'，但忽略了条件式救助本身的行政成本和羞辱效应可能反而加深贫困"
+            },
+            {
+                id: 18,
+                title: "为什么医生越来越不愿意说\"我确定\"？",
+                source: "《新英格兰医学杂志》",
+                topic: "医学与健康",
+                selectionType: "editor",
+                summary: "现代医学从\"确定性\"走向\"概率性\"，这既是进步，也让医患沟通更复杂。",
+                content: "过去医生常给出明确诊断和治疗方案，但现在越来越多的医学决策基于概率、风险和个体化数据。这要求患者理解不确定性，也要求医生诚实面对医学的局限。好消息是：承认不确定性可以减少过度治疗；坏消息是：它让\"信任医生\"这件事变得更难。",
+                dimensions: { stance: 0, evidence: 5, emotion: 0, timeScale: "长期", geography: "全球", sourceType: "学术研究" },
+                tags: ["医学", "不确定性", "医患关系"],
+                algorithmBlindSpot: "医学不确定性在算法中是低信任内容——人们搜索健康信息时期望确定性答案，算法因此优先推荐'权威断言'而非'概率分析'",
+                cognitiveBlindSpot: "你可能默认认为'好医生=给确定答案'，但忽略了确定性本身可能是过度自信的信号而非专业能力的证明"
+            },
+            {
+                id: 19,
+                title: "当语言消亡时，失去的不仅是一种交流方式",
+                source: "《国家地理》",
+                topic: "文化与语言",
+                selectionType: "random",
+                summary: "每两周就有一种语言消失，随之而去的是独特的世界观和知识体系。",
+                content: "语言不只是沟通工具，它塑造了我们如何分类颜色、理解时间、表达情感。当一种语言消亡，随之消失的可能还有关于草药、气候、导航的本土知识。保护少数民族语言，不只是文化多样性的问题，也是保护人类认知多样性的方式。",
+                dimensions: { stance: -1, evidence: 4, emotion: -1, timeScale: "长期", geography: "全球", sourceType: "主流媒体" },
+                tags: ["语言", "文化多样性", "人类学"],
+                algorithmBlindSpot: "濒危语言话题在算法中没有流量——使用者少=内容少=推荐少，形成沉默的恶性循环",
+                cognitiveBlindSpot: "你可能默认认为'统一语言=高效沟通'，但忽略了每种语言都编码着独特的知识体系和思维方式"
+            },
+            {
+                id: 20,
+                title: "网红城市为什么越来越像？",
+                source: "《建筑学报》",
+                topic: "城市与空间",
+                selectionType: "random",
+                summary: "从咖啡馆装修到打卡景点，全球化审美正在抹平城市的独特性。",
+                content: "当每个城市都有类似的网红街、类似的咖啡馆、类似的拍照背景墙时，\"旅行\"的意义正在被稀释。这不是简单的审美趋同，而是平台算法、商业地产、流量经济共同塑造的结果。城市正在从\"居住的地方\"变成\"可被消费和拍照的场景\"。",
+                dimensions: { stance: -1, evidence: 3, emotion: -1, timeScale: "中期", geography: "区域", sourceType: "独立媒体" },
+                tags: ["城市", "旅游", "全球化"],
+                algorithmBlindSpot: "城市差异化内容在算法中反而被同质化——平台推荐'打卡攻略'的流量远大于'反思城市化'的深度内容",
+                cognitiveBlindSpot: "你可能默认认为'旅行=去不同地方'，但忽略了算法推荐正在让你的旅行体验变得高度标准化"
+            }
+        ];
+
+        const userTagOptions = [
+            { name: "科技数码", color: "cyan" },
+            { name: "效率工具", color: "violet" },
+            { name: "AI 资讯", color: "purple" },
+            { name: "创业思维", color: "blue" },
+            { name: "财经投资", color: "emerald" },
+            { name: "人文历史", color: "amber" },
+            { name: "艺术设计", color: "rose" },
+            { name: "健康生活", color: "teal" }
+        ];
+
+        const selectionTypeMeta = {
+            algorithm: { label: "算法平衡", color: "cyan", desc: "基于多维度评分，刻意打破同质化" },
+            editor: { label: "编辑精选", color: "violet", desc: "人工筛选的高质量深度内容" },
+            random: { label: "随机发现", color: "pink", desc: "引入随机性，防止算法自我强化" }
+        };
+
+        // ===== 应用状态 =====
+        let selectedTags = ["科技数码", "效率工具", "AI 资讯", "创业思维"];
+        let currentFilter = 'all';
+        let currentRecipe = [];
+        let readStates = {};
+        let feedbackStates = {};
+        let currentTheme = 'dark';
+        let particleAnimId = null;
+        let shareCardId = null;
+
+        // ===== 本地存储 =====
+        function getTodayKey() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_PREFIX + 'tags', JSON.stringify(selectedTags));
+                localStorage.setItem(STORAGE_PREFIX + 'theme', currentTheme);
+
+                const today = getTodayKey();
+                localStorage.setItem(STORAGE_PREFIX + 'recipe_' + today, JSON.stringify(currentRecipe.map(i => ({
+                    id: i.id,
+                    _pickedBy: i._pickedBy
+                }))));
+                localStorage.setItem(STORAGE_PREFIX + 'read_' + today, JSON.stringify(readStates));
+                localStorage.setItem(STORAGE_PREFIX + 'feedback_' + today, JSON.stringify(feedbackStates));
+
+                const score = calculateBalanceScore(currentRecipe);
+                localStorage.setItem(STORAGE_PREFIX + 'balance_' + today, JSON.stringify(score));
+            } catch (e) { /* storage full or unavailable */ }
+        }
+
+        function loadState() {
+            try {
+                const tags = localStorage.getItem(STORAGE_PREFIX + 'tags');
+                if (tags) selectedTags = JSON.parse(tags);
+
+                const theme = localStorage.getItem(STORAGE_PREFIX + 'theme');
+                if (theme) currentTheme = theme;
+
+                const today = getTodayKey();
+                const savedRecipe = localStorage.getItem(STORAGE_PREFIX + 'recipe_' + today);
+                const savedRead = localStorage.getItem(STORAGE_PREFIX + 'read_' + today);
+                const savedFeedback = localStorage.getItem(STORAGE_PREFIX + 'feedback_' + today);
+
+                if (savedRecipe) {
+                    const recipeData = JSON.parse(savedRecipe);
+                    currentRecipe = recipeData.map(rd => {
+                        const item = allItems.find(i => i.id === rd.id);
+                        return item ? { ...item, _pickedBy: rd._pickedBy } : null;
+                    }).filter(Boolean);
+                }
+
+                if (savedRead) readStates = JSON.parse(savedRead);
+                if (savedFeedback) feedbackStates = JSON.parse(savedFeedback);
+            } catch (e) { /* parse error */ }
+        }
+
+        // ===== 推荐算法 =====
+        function generateRecipe() {
+            const recipe = [];
+            const usedIds = new Set();
+
+            // 1. 编辑精选
+            const editorCandidates = allItems
+                .filter(i => i.selectionType === 'editor' && i.dimensions.evidence >= 4)
+                .sort(() => Math.random() - 0.5);
+            if (editorCandidates.length > 0) {
+                recipe.push({ ...editorCandidates[0], _pickedBy: '编辑精选' });
+                usedIds.add(editorCandidates[0].id);
+            }
+
+            // 2. 随机发现
+            const randomCandidates = allItems
+                .filter(i => i.selectionType === 'random' && !usedIds.has(i.id) && i.dimensions.evidence >= 3)
+                .sort(() => Math.random() - 0.5);
+            if (randomCandidates.length > 0) {
+                recipe.push({ ...randomCandidates[0], _pickedBy: '随机发现' });
+                usedIds.add(randomCandidates[0].id);
+            }
+
+            // 3. 算法平衡
+            const remaining = allItems.filter(i => !usedIds.has(i.id));
+            const best = findBestBalancedItem(remaining, recipe);
+            if (best) {
+                recipe.push({ ...best, _pickedBy: '算法平衡' });
+                usedIds.add(best.id);
+            }
+
+            // 补充
+            while (recipe.length < 3) {
+                const fallback = allItems
+                    .filter(i => !usedIds.has(i.id))
+                    .sort((a, b) => b.dimensions.evidence - a.dimensions.evidence)[0];
+                if (fallback) {
+                    recipe.push({ ...fallback, _pickedBy: '补充' });
+                    usedIds.add(fallback.id);
+                } else break;
+            }
+
+            return recipe.sort(() => Math.random() - 0.5);
+        }
+
+        function findBestBalancedItem(candidates, currentRecipe) {
+            if (candidates.length === 0) return null;
+            const currentTopics = new Set(currentRecipe.map(i => i.topic));
+            const currentStances = currentRecipe.map(i => i.dimensions.stance);
+            const currentEmotions = currentRecipe.map(i => i.dimensions.emotion);
+            const currentSources = new Set(currentRecipe.map(i => i.dimensions.sourceType));
+            const currentGeos = new Set(currentRecipe.map(i => i.dimensions.geography));
+
+            let best = null, bestScore = -Infinity;
+            candidates.forEach(item => {
+                let score = 0;
+                if (!currentTopics.has(item.topic)) score += 30;
+                score += Math.min(...currentStances.map(s => Math.abs(s - item.dimensions.stance))) * 10;
+                score += Math.min(...currentEmotions.map(e => Math.abs(e - item.dimensions.emotion))) * 8;
+                if (!currentSources.has(item.dimensions.sourceType)) score += 15;
+                if (!currentGeos.has(item.dimensions.geography)) score += 10;
+                score += item.dimensions.evidence * 5;
+                const tagMatch = selectedTags.some(tag => item.tags.some(t => t.includes(tag.slice(0, 2))));
+                if (tagMatch) score += 5;
+                if (score > bestScore) { bestScore = score; best = item; }
+            });
+            return best;
+        }
+
+        function calculateBalanceScore(recipe) {
+            if (recipe.length < 3) return { total: 0, stance: 0, evidence: 0, domain: 0 };
+            const stances = recipe.map(i => i.dimensions.stance);
+            const stanceRange = Math.max(...stances) - Math.min(...stances);
+            const stanceScore = Math.min(100, stanceRange * 40 + 20);
+            const evidenceScore = Math.min(100, recipe.reduce((s, i) => s + i.dimensions.evidence, 0) / 3 * 18);
+            const topics = new Set(recipe.map(i => i.topic));
+            const sources = new Set(recipe.map(i => i.dimensions.sourceType));
+            const domainScore = Math.min(100, topics.size * 25 + sources.size * 10);
+            const total = Math.round((stanceScore + evidenceScore + domainScore) / 3);
+            return { total, stance: Math.round(stanceScore), evidence: Math.round(evidenceScore), domain: Math.round(domainScore) };
+        }
+
+        // ===== 认知盲区分析 =====
+        function calculateCognitiveBlindSpots(recipe) {
+            if (recipe.length === 0) {
+                return { stanceBreadth: 0, evidenceAwareness: 0, emotionalResilience: 0, temporalDepth: 0, geographicVision: 0, sourceDiversity: 0 };
+            }
+
+            const stances = recipe.map(i => i.dimensions.stance);
+            const stanceRange = Math.max(...stances) - Math.min(...stances);
+            const stanceBreadth = Math.min(100, stanceRange * 35 + 15);
+
+            const avgEvidence = recipe.reduce((s, i) => s + i.dimensions.evidence, 0) / recipe.length;
+            const evidenceAwareness = Math.min(100, avgEvidence * 18 + 10);
+
+            const emotions = recipe.map(i => i.dimensions.emotion);
+            const emotionRange = Math.max(...emotions) - Math.min(...emotions);
+            const emotionalResilience = Math.min(100, emotionRange * 30 + 25);
+
+            const timeScales = new Set(recipe.map(i => i.dimensions.timeScale));
+            const temporalDepth = Math.min(100, (timeScales.size / 3) * 80 + 20);
+
+            const geos = new Set(recipe.map(i => i.dimensions.geography));
+            const geographicVision = Math.min(100, (geos.size / 3) * 80 + 20);
+
+            const sourceTypes = new Set(recipe.map(i => i.dimensions.sourceType));
+            const sourceDiversity = Math.min(100, (sourceTypes.size / 5) * 80 + 20);
+
+            return {
+                stanceBreadth: Math.round(stanceBreadth),
+                evidenceAwareness: Math.round(evidenceAwareness),
+                emotionalResilience: Math.round(emotionalResilience),
+                temporalDepth: Math.round(temporalDepth),
+                geographicVision: Math.round(geographicVision),
+                sourceDiversity: Math.round(sourceDiversity)
+            };
+        }
+
+        // ===== Canvas: 粒子动画 =====
+        function initParticles() {
+            const canvas = document.getElementById('particle-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            const PARTICLE_COUNT = 50;
+
+            function resize() {
+                const parent = canvas.parentElement;
+                canvas.width = parent.offsetWidth;
+                canvas.height = parent.offsetHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const colors = [
+                getComputedStyle(document.documentElement).getPropertyValue('--particle-color-1').trim() || 'rgba(6,182,212,0.5)',
+                getComputedStyle(document.documentElement).getPropertyValue('--particle-color-2').trim() || 'rgba(139,92,246,0.5)',
+                getComputedStyle(document.documentElement).getPropertyValue('--particle-color-3').trim() || 'rgba(236,72,153,0.4)'
+            ];
+
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    r: Math.random() * 2 + 0.5,
+                    vx: (Math.random() - 0.5) * 0.3,
+                    vy: (Math.random() - 0.5) * 0.3 - 0.15,
+                    alpha: Math.random() * 0.5 + 0.2,
+                    color: colors[Math.floor(Math.random() * colors.length)]
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0) p.x = canvas.width;
+                    if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height;
+                    if (p.y > canvas.height) p.y = 0;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = p.alpha;
+                    ctx.fill();
+                });
+                ctx.globalAlpha = 1;
+                particleAnimId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // ===== Canvas: 雷达图 =====
+        function drawRadarChart(scores) {
+            const canvas = document.getElementById('radar-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const displaySize = Math.min(canvas.parentElement.offsetWidth, 320);
+
+            canvas.style.width = displaySize + 'px';
+            canvas.style.height = displaySize + 'px';
+            canvas.width = displaySize * dpr;
+            canvas.height = displaySize * dpr;
+            ctx.scale(dpr, dpr);
+
+            const cx = displaySize / 2;
+            const cy = displaySize / 2;
+            const maxR = displaySize / 2 - 45;
+            const dims = RADAR_DIMENSIONS;
+            const n = dims.length;
+            const angleStep = (Math.PI * 2) / n;
+            const startAngle = -Math.PI / 2;
+
+            ctx.clearRect(0, 0, displaySize, displaySize);
+
+            // Draw grid levels
+            const levels = [0.33, 0.66, 1.0];
+            levels.forEach(level => {
+                ctx.beginPath();
+                for (let i = 0; i <= n; i++) {
+                    const angle = startAngle + i * angleStep;
+                    const x = cx + Math.cos(angle) * maxR * level;
+                    const y = cy + Math.sin(angle) * maxR * level;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.strokeStyle = getCSSVar('--radar-grid');
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+
+            // Draw axis lines
+            for (let i = 0; i < n; i++) {
+                const angle = startAngle + i * angleStep;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + Math.cos(angle) * maxR, cy + Math.sin(angle) * maxR);
+                ctx.strokeStyle = getCSSVar('--radar-grid');
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            // Draw data polygon
+            const keys = dims.map(d => d.key);
+            ctx.beginPath();
+            keys.forEach((key, i) => {
+                const angle = startAngle + i * angleStep;
+                const val = (scores[key] || 0) / 100;
+                const x = cx + Math.cos(angle) * maxR * val;
+                const y = cy + Math.sin(angle) * maxR * val;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.closePath();
+            ctx.fillStyle = getCSSVar('--radar-fill');
+            ctx.fill();
+            ctx.strokeStyle = getCSSVar('--radar-stroke');
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw data points
+            keys.forEach((key, i) => {
+                const angle = startAngle + i * angleStep;
+                const val = (scores[key] || 0) / 100;
+                const x = cx + Math.cos(angle) * maxR * val;
+                const y = cy + Math.sin(angle) * maxR * val;
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = getCSSVar('--radar-dot');
+                ctx.fill();
+                ctx.strokeStyle = getCSSVar('--radar-bg');
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            // Draw labels
+            ctx.font = '12px "Noto Sans SC", sans-serif';
+            ctx.fillStyle = getCSSVar('--radar-label');
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            dims.forEach((dim, i) => {
+                const angle = startAngle + i * angleStep;
+                const labelR = maxR + 28;
+                let x = cx + Math.cos(angle) * labelR;
+                let y = cy + Math.sin(angle) * labelR;
+                ctx.fillText(dim.label, x, y);
+            });
+        }
+
+        function getCSSVar(name) {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        }
+
+        // ===== 动画工具 =====
+        function animateNumber(element, target, duration) {
+            duration = duration || 800;
+            const startTime = performance.now();
+            function update(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                element.textContent = Math.round(target * eased);
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        // ===== 渲染模块 =====
+        function renderAll() {
+            renderUserTags();
+            renderBalancePanel();
+            renderSpectrum();
+            renderTransparency();
+            renderRadar();
+            renderCards();
+            renderProgress();
+            saveState();
+        }
+
+        function refreshAll() {
+            currentRecipe = generateRecipe();
+            readStates = {};
+            feedbackStates = {};
+            renderAll();
+            // Add slide-in animation to cards
+            setTimeout(() => {
+                document.querySelectorAll('.recipe-card').forEach((card, i) => {
+                    card.style.animationDelay = `${i * 0.15}s`;
+                    card.classList.add('anim-card-slide');
+                });
+            }, 50);
+        }
+
+        function renderBalancePanel() {
+            const score = calculateBalanceScore(currentRecipe);
+            const scoreEl = document.getElementById('balance-score');
+            animateNumber(scoreEl, score.total, 800);
+
+            ['stance', 'evidence', 'domain'].forEach(dim => {
+                document.getElementById('score-' + dim).textContent = score[dim];
+            });
+
+            // Animate bars with slight delay
+            setTimeout(() => {
+                document.getElementById('bar-stance').style.width = score.stance + '%';
+                document.getElementById('bar-evidence').style.width = score.evidence + '%';
+                document.getElementById('bar-domain').style.width = score.domain + '%';
+            }, 200);
+        }
+
+        function renderSpectrum() {
+            const chart = document.getElementById('spectrum-chart');
+            Array.from(chart.children).forEach(child => {
+                if (child.classList.contains('spectrum-dot')) child.remove();
+            });
+
+            currentRecipe.forEach((item, index) => {
+                const stance = item.dimensions.stance;
+                const left = ((stance + 2) / 4) * 100;
+                const colors = ['bg-cyan-400', 'bg-violet-400', 'bg-pink-400'];
+                const shadowColors = ['rgba(6,182,212,0.5)', 'rgba(139,92,246,0.5)', 'rgba(236,72,153,0.5)'];
+                const dot = document.createElement('div');
+                dot.className = `spectrum-dot absolute top-1/2 w-3 h-3 rounded-full ${colors[index % 3]}`;
+                dot.style.left = left + '%';
+                dot.style.boxShadow = `0 0 8px ${shadowColors[index % 3]}`;
+                dot.style.animation = `elasticPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${index * 0.15}s forwards`;
+                dot.style.transform = 'translate(-50%, -50%) scale(0)';
+                dot.title = item.title + '（立场: ' + (stance > 0 ? '+' : '') + stance + '）';
+                chart.appendChild(dot);
+            });
+        }
+
+        function renderTransparency() {
+            const panel = document.getElementById('transparency-panel');
+            const composition = { algorithm: 0, editor: 0, random: 0 };
+            currentRecipe.forEach(item => {
+                if (item._pickedBy === '算法平衡') composition.algorithm++;
+                else if (item._pickedBy === '编辑精选') composition.editor++;
+                else if (item._pickedBy === '随机发现') composition.random++;
+            });
+
+            const topics = [...new Set(currentRecipe.map(i => i.topic))].join('、');
+            const sources = [...new Set(currentRecipe.map(i => i.dimensions.sourceType))].join('、');
+            const avgEvidence = (currentRecipe.reduce((s, i) => s + i.dimensions.evidence, 0) / currentRecipe.length).toFixed(1);
+
+            panel.innerHTML = `
+                <div class="flex justify-between items-center py-2 border-b" style="border-color: var(--border-color);">
+                    <span style="color: var(--text-muted);">推荐组成</span>
+                    <span style="color: var(--text-primary);">编辑 ${composition.editor} · 算法 ${composition.algorithm} · 随机 ${composition.random}</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b" style="border-color: var(--border-color);">
+                    <span style="color: var(--text-muted);">覆盖领域</span>
+                    <span style="color: var(--text-primary);">${topics}</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b" style="border-color: var(--border-color);">
+                    <span style="color: var(--text-muted);">来源类型</span>
+                    <span style="color: var(--text-primary);">${sources}</span>
+                </div>
+                <div class="flex justify-between items-center py-2">
+                    <span style="color: var(--text-muted);">平均证据等级</span>
+                    <span class="text-cyan-400 font-medium">${avgEvidence} / 5</span>
+                </div>
+            `;
+        }
+
+        function renderRadar() {
+            const scores = calculateCognitiveBlindSpots(currentRecipe);
+            drawRadarChart(scores);
+
+            // Render dimension list
+            const listEl = document.getElementById('radar-dimensions-list');
+            listEl.innerHTML = RADAR_DIMENSIONS.map(dim => {
+                const val = scores[dim.key] || 0;
+                const barColor = val >= 70 ? 'from-emerald-500 to-green-400' : val >= 40 ? 'from-yellow-500 to-amber-400' : 'from-red-500 to-rose-400';
+                return `
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs w-20 shrink-0" style="color: var(--text-muted);">${dim.icon} ${dim.label}</span>
+                        <div class="flex-1 dimension-bar"><div class="dimension-fill bg-gradient-to-r ${barColor}" style="width: ${val}%;"></div></div>
+                        <span class="text-xs font-mono w-8 text-right" style="color: var(--text-secondary);">${val}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Find weakest dimension
+            let weakestKey = 'stanceBreadth';
+            let weakestVal = 100;
+            RADAR_DIMENSIONS.forEach(dim => {
+                if ((scores[dim.key] || 0) < weakestVal) {
+                    weakestVal = scores[dim.key] || 0;
+                    weakestKey = dim.key;
+                }
+            });
+            const weakestDim = RADAR_DIMENSIONS.find(d => d.key === weakestKey);
+            document.getElementById('radar-weakest-tip').innerHTML =
+                `<strong>${weakestDim.icon} ${weakestDim.label}</strong>（${weakestVal}分）—— ${IMPROVEMENT_TIPS[weakestKey]}`;
+        }
+
+        function renderCards() {
+            const container = document.getElementById('cards-container');
+            let cards = currentRecipe;
+
+            if (currentFilter !== 'all') {
+                const typeMap = { 'algorithm': '算法平衡', 'editor': '编辑精选', 'random': '随机发现' };
+                cards = cards.filter(card => card._pickedBy === typeMap[currentFilter]);
+            }
+
+            if (cards.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 rounded-xl border border-dashed" style="color: var(--text-muted); background: var(--bg-surface); border-color: var(--border-color);">
+                        <p>当前筛选条件下暂无内容，换个条件或重新生成食谱试试。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = cards.map((card, index) => {
+                const meta = selectionTypeMeta[card.selectionType];
+                const evidenceColor = card.dimensions.evidence >= 4 ? 'text-emerald-400' : card.dimensions.evidence >= 3 ? 'text-yellow-400' : 'text-orange-400';
+                const stanceText = card.dimensions.stance > 0 ? '+' + card.dimensions.stance + ' 激进/支持' : card.dimensions.stance < 0 ? card.dimensions.stance + ' 保守/反对' : '0 中性/平衡';
+                const emotionText = card.dimensions.emotion > 0 ? '正面/希望' : card.dimensions.emotion < 0 ? '负面/忧虑' : '中性/客观';
+                const isRead = readStates[card.id];
+                const feedbackType = feedbackStates[card.id];
+
+                return `
+                <article class="recipe-card rounded-xl p-5 md:p-6 border card-hover-glow t-border-hover transition-colors" 
+                    style="background: var(--bg-card); border-color: var(--border-color); animation-delay: ${index * 0.15}s;"
+                    data-type="${card.selectionType}"
+                    onmousemove="handleCardHover(event, this)">
+                    <div class="relative z-10">
+                        <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="px-2.5 py-1 rounded-full bg-${meta.color}-500/20 text-${meta.color}-300 text-xs font-medium">${meta.label}</span>
+                                <span class="px-2.5 py-1 rounded-full text-xs" style="background: var(--bg-surface); color: var(--text-secondary);">${card.topic}</span>
+                                <span class="text-xs" style="color: var(--text-muted);">${card.source}</span>
+                                ${isRead ? '<span class="text-xs text-emerald-400">✓ 已读</span>' : ''}
+                            </div>
+                            <span class="text-xs" style="color: var(--text-muted);">#${String(index + 1).padStart(2, '0')}</span>
+                        </div>
+
+                        <h4 class="text-lg font-bold mb-2" style="color: var(--text-primary); line-height: 1.5;">${card.title}</h4>
+                        <p class="text-sm mb-4 leading-relaxed" style="color: var(--text-secondary); line-height: 1.75;">${card.summary}</p>
+
+                        <div class="rounded-lg p-4 mb-3 border-l-4 border-${meta.color}-500" style="background: var(--bg-elevated);">
+                            <div class="text-xs text-${meta.color}-400 font-medium mb-1">为什么推荐这条？</div>
+                            <p class="text-sm" style="color: var(--text-primary); line-height: 1.65;">${explainWhy(card, currentRecipe)}</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3 blind-spot-grid">
+                            <div class="blind-spot-algo rounded-lg p-3">
+                                <div class="text-xs font-medium mb-1 blind-label">🔍 为什么算法不会推给你？</div>
+                                <p class="text-xs" style="color: var(--text-secondary); line-height: 1.65;">${card.algorithmBlindSpot}</p>
+                            </div>
+                            <div class="blind-spot-cog rounded-lg p-3">
+                                <div class="text-xs font-medium mb-1 blind-label">🧠 你的认知盲区可能在哪里？</div>
+                                <p class="text-xs" style="color: var(--text-secondary); line-height: 1.65;">${card.cognitiveBlindSpot}</p>
+                            </div>
+                        </div>
+
+                        <div class="expand-content" id="expand-${card.id}">
+                            <div class="pt-2 pb-4 text-sm leading-relaxed border-t" style="color: var(--text-primary); border-color: var(--border-color); line-height: 1.8;">
+                                ${card.content}
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4 text-xs">
+                                <div class="rounded p-2" style="background: var(--bg-elevated);">
+                                    <div style="color: var(--text-muted);" class="mb-1">立场</div>
+                                    <div style="color: var(--text-primary);">${stanceText}</div>
+                                </div>
+                                <div class="rounded p-2" style="background: var(--bg-elevated);">
+                                    <div style="color: var(--text-muted);" class="mb-1">证据等级</div>
+                                    <div class="${evidenceColor} font-medium">${'★'.repeat(card.dimensions.evidence)}${'☆'.repeat(5 - card.dimensions.evidence)}</div>
+                                </div>
+                                <div class="rounded p-2" style="background: var(--bg-elevated);">
+                                    <div style="color: var(--text-muted);" class="mb-1">情绪基调</div>
+                                    <div style="color: var(--text-primary);">${emotionText}</div>
+                                </div>
+                                <div class="rounded p-2" style="background: var(--bg-elevated);">
+                                    <div style="color: var(--text-muted);" class="mb-1">时间尺度</div>
+                                    <div style="color: var(--text-primary);">${card.dimensions.timeScale}</div>
+                                </div>
+                                <div class="rounded p-2" style="background: var(--bg-elevated);">
+                                    <div style="color: var(--text-muted);" class="mb-1">地理范围</div>
+                                    <div style="color: var(--text-primary);">${card.dimensions.geography}</div>
+                                </div>
+                                <div class="rounded p-2" style="background: var(--bg-elevated);">
+                                    <div style="color: var(--text-muted);" class="mb-1">来源类型</div>
+                                    <div style="color: var(--text-primary);">${card.dimensions.sourceType}</div>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                ${card.tags.map(tag => `<span class="px-2 py-1 rounded text-xs" style="background: var(--bg-surface); color: var(--text-secondary);">${tag}</span>`).join('')}
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2">
+                            <button onclick="toggleExpand(${card.id})" class="text-sm text-${meta.color}-400 hover:text-${meta.color}-300 font-medium flex items-center gap-1" id="btn-${card.id}">
+                                展开阅读
+                                <svg class="w-4 h-4 transition-transform" id="icon-${card.id}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div class="flex items-center gap-2">
+                                <button onclick="feedback(${card.id}, 'useful')" class="text-xs px-3 py-1.5 rounded-full transition-colors ${feedbackType === 'useful' ? 'bg-emerald-600 text-white' : ''}" style="${feedbackType === 'useful' ? '' : 'background: var(--bg-surface); color: var(--text-secondary);'}">
+                                    ${feedbackType === 'useful' ? '已标记有用' : '有用'}
+                                </button>
+                                <button onclick="feedback(${card.id}, 'notuseful')" class="text-xs px-3 py-1.5 rounded-full transition-colors ${feedbackType === 'notuseful' ? 'bg-slate-600 text-white' : ''}" style="${feedbackType === 'notuseful' ? '' : 'background: var(--bg-surface); color: var(--text-secondary);'}">
+                                    ${feedbackType === 'notuseful' ? '已标记不感兴趣' : '不感兴趣'}
+                                </button>
+                                <button onclick="openShareModal(${card.id})" class="share-btn text-xs p-1.5 rounded-full transition-colors" style="color: var(--text-muted);" title="分享">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            `}).join('');
+        }
+
+        function renderProgress() {
+            const total = currentRecipe.length;
+            if (total === 0) return;
+            const readCount = currentRecipe.filter(i => readStates[i.id]).length;
+            const usefulCount = currentRecipe.filter(i => feedbackStates[i.id] === 'useful').length;
+            const pct = (readCount / total) * 100;
+
+            const progressContainer = document.getElementById('daily-progress');
+            const fill = document.getElementById('progress-fill');
+            const statusEl = document.getElementById('progress-status');
+            const completeBadge = document.getElementById('progress-complete-badge');
+
+            fill.style.width = pct + '%';
+            statusEl.textContent = readCount + '/' + total + ' 已阅读';
+
+            if (usefulCount === total && total > 0) {
+                progressContainer.classList.add('progress-complete');
+                completeBadge.classList.remove('hidden');
+                statusEl.classList.add('hidden');
+            } else {
+                progressContainer.classList.remove('progress-complete');
+                completeBadge.classList.add('hidden');
+                statusEl.classList.remove('hidden');
+            }
+        }
+
+        function renderUserTags() {
+            const container = document.getElementById('user-tags');
+            container.innerHTML = selectedTags.map(tag => {
+                const colorInfo = userTagOptions.find(t => t.name === tag) || { color: 'slate' };
+                return `<span class="tag-pill px-3 py-1 rounded-full bg-${colorInfo.color}-500/20 text-${colorInfo.color}-300 text-xs">${tag}</span>`;
+            }).join('');
+        }
+
+        function explainWhy(card, recipe) {
+            const reasons = [];
+            if (card._pickedBy === '编辑精选') {
+                reasons.push('由编辑人工筛选，证据质量高、视角独特');
+            } else if (card._pickedBy === '随机发现') {
+                reasons.push('通过随机机制引入，防止推荐结果被算法惯性锁死');
+            } else {
+                reasons.push('由算法基于多维度平衡选出');
+            }
+            const otherTopics = recipe.filter(i => i.id !== card.id).map(i => i.topic);
+            if (!otherTopics.includes(card.topic)) {
+                reasons.push('补充了「' + card.topic + '」这一未被其他推荐覆盖的领域');
+            }
+            const otherSources = recipe.filter(i => i.id !== card.id).map(i => i.dimensions.sourceType);
+            if (!otherSources.includes(card.dimensions.sourceType)) {
+                reasons.push('引入了' + card.dimensions.sourceType + '视角，丰富来源多样性');
+            }
+            if (card.dimensions.evidence >= 4) {
+                reasons.push('证据等级较高，适合建立可靠认知');
+            }
+            return reasons.join('；') + '。';
+        }
+
+        // ===== 交互处理 =====
+        function handleCardHover(e, card) {
+            const rect = card.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+            card.style.setProperty('--mouse-x', x + '%');
+            card.style.setProperty('--mouse-y', y + '%');
+        }
+
+        function toggleExpand(id) {
+            const content = document.getElementById('expand-' + id);
+            const btn = document.getElementById('btn-' + id);
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+                btn.innerHTML = '展开阅读 <svg class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
+            } else {
+                content.classList.add('open');
+                btn.innerHTML = '收起 <svg class="w-4 h-4 transition-transform" style="transform: rotate(180deg)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
+                readStates[id] = true;
+                renderProgress();
+                saveState();
+            }
+        }
+
+        function feedback(id, type) {
+            feedbackStates[id] = type;
+            saveState();
+            renderCards();
+            renderProgress();
+        }
+
+        function filterCards(type) {
+            currentFilter = type;
+            document.querySelectorAll('[data-filter]').forEach(btn => {
+                if (btn.dataset.filter === type) {
+                    btn.style.background = 'var(--bg-card)';
+                    btn.style.color = 'var(--text-primary)';
+                } else {
+                    btn.style.background = 'var(--bg-elevated)';
+                    btn.style.color = 'var(--text-muted)';
+                }
+            });
+            renderCards();
+            // Re-apply animation
+            setTimeout(() => {
+                document.querySelectorAll('.recipe-card').forEach((card, i) => {
+                    card.style.animationDelay = i * 0.1 + 's';
+                    card.classList.add('anim-card-slide');
+                });
+            }, 50);
+        }
+
+        function scrollToAbout() {
+            document.getElementById('about').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ===== 主题切换 =====
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            updateThemeIcon();
+            saveState();
+            // Redraw radar with new colors
+            setTimeout(() => renderRadar(), 100);
+        }
+
+        function updateThemeIcon() {
+            const darkIcon = document.getElementById('theme-icon-dark');
+            const lightIcon = document.getElementById('theme-icon-light');
+            if (currentTheme === 'dark') {
+                darkIcon.classList.remove('hidden');
+                lightIcon.classList.add('hidden');
+            } else {
+                darkIcon.classList.add('hidden');
+                lightIcon.classList.remove('hidden');
+            }
+        }
+
+        // ===== 设置面板 =====
+        function openSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function initSettingsTags() {
+            const container = document.getElementById('settings-tags');
+            container.innerHTML = userTagOptions.map(tag => {
+                const isSelected = selectedTags.includes(tag.name);
+                return `
+                    <button onclick="toggleTag('${tag.name}')"
+                        class="px-3 py-1.5 rounded-full text-xs transition-all ${isSelected
+                            ? 'bg-' + tag.color + '-500 text-white'
+                            : ''}"
+                        style="${isSelected ? '' : 'background: var(--bg-surface); color: var(--text-muted);'}"
+                        data-tag="${tag.name}">
+                        ${tag.name}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function toggleTag(tagName) {
+            if (selectedTags.includes(tagName)) {
+                if (selectedTags.length > 1) {
+                    selectedTags = selectedTags.filter(t => t !== tagName);
+                }
+            } else {
+                selectedTags.push(tagName);
+            }
+            initSettingsTags();
+        }
+
+        function saveSettings() {
+            renderUserTags();
+            closeSettings();
+            refreshAll();
+        }
+
+        document.getElementById('settings-modal').addEventListener('click', function(e) {
+            if (e.target.id === 'settings-modal') closeSettings();
+        });
+
+        // ===== 分享功能 =====
+        function openShareModal(id) {
+            shareCardId = id;
+            const card = allItems.find(i => i.id === id);
+            if (!card) return;
+
+            const preview = document.getElementById('share-card-preview');
+            const meta = selectionTypeMeta[card.selectionType];
+            preview.innerHTML = `
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm">反</div>
+                    <div>
+                        <div class="text-xs font-medium" style="color: var(--text-primary);">反推荐引擎</div>
+                        <div class="text-xs" style="color: var(--text-muted);">信息食谱</div>
+                    </div>
+                </div>
+                <h4 class="font-bold text-sm mb-1.5" style="color: var(--text-primary); line-height: 1.5;">${card.title}</h4>
+                <p class="text-xs mb-2" style="color: var(--text-secondary); line-height: 1.6;">${card.summary}</p>
+                <div class="flex items-center gap-2 text-xs" style="color: var(--text-muted);">
+                    <span class="px-2 py-0.5 rounded-full bg-${meta.color}-500/20 text-${meta.color}-300">${meta.label}</span>
+                    <span>${card.source}</span>
+                </div>
+            `;
+
+            const modal = document.getElementById('share-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeShareModal() {
+            const modal = document.getElementById('share-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function copyShareLink() {
+            const card = allItems.find(i => i.id === shareCardId);
+            if (!card) return;
+            const link = 'https://disrec.app/share/' + card.id;
+            navigator.clipboard.writeText(link).then(() => {
+                const btn = document.getElementById('copy-link-text');
+                btn.textContent = '已复制!';
+                setTimeout(() => { btn.textContent = '复制链接'; }, 2000);
+            }).catch(() => {
+                // Fallback
+                const input = document.createElement('input');
+                input.value = link;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                const btn = document.getElementById('copy-link-text');
+                btn.textContent = '已复制!';
+                setTimeout(() => { btn.textContent = '复制链接'; }, 2000);
+            });
+        }
+
+        function generateShareImage() {
+            // Show a styled notification since we can't generate actual images without external libs
+            const card = allItems.find(i => i.id === shareCardId);
+            if (!card) return;
+            const preview = document.getElementById('share-card-preview');
+            preview.style.animation = 'pulseGlow 0.5s ease';
+            setTimeout(() => { preview.style.animation = ''; }, 500);
+
+            // Create a temporary "saved" notification
+            const note = document.createElement('div');
+            note.className = 'text-center text-xs mt-2';
+            note.style.color = 'var(--text-muted)';
+            note.textContent = '💡 分享卡片已生成预览，可截图分享';
+            preview.appendChild(note);
+            setTimeout(() => { if (note.parentNode) note.remove(); }, 3000);
+        }
+
+        document.getElementById('share-modal').addEventListener('click', function(e) {
+            if (e.target.id === 'share-modal') closeShareModal();
+        });
+
+        // ===== 初始化 =====
+        function init() {
+            loadState();
+
+            // Apply theme
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            updateThemeIcon();
+
+            // Update date
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('current-date').textContent = now.toLocaleDateString('zh-CN', options);
+
+            // Init settings tags
+            initSettingsTags();
+
+            // Generate or restore recipe
+            if (currentRecipe.length === 0) {
+                currentRecipe = generateRecipe();
+            }
+
+            renderAll();
+            initParticles();
+
+            // Staggered fade-in for all animated elements
+            document.querySelectorAll('.anim-fade-in-up').forEach((el, i) => {
+                el.style.animationDelay = (0.1 + i * 0.1) + 's';
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Redraw radar on resize
+        let resizeTimer;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (currentRecipe.length > 0) renderRadar();
+            }, 250);
+        });
+    </script>
+</body>
+</html>
